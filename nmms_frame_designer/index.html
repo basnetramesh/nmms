@@ -1,0 +1,976 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nepali Mela 4 — NMMS Frame Designer</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+
+  <style>
+    @font-face{
+      font-family: "MerriweatherSans";
+      src: url("assets/MerriweatherSans-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+
+    :root{
+      --brand: #2f9a66;
+      --brand-dark: #22724c;
+      --bg1: #f3f7f5;
+      --bg2: #ffffff;
+      --card: rgba(255,255,255,0.90);
+      --card2: rgba(255,255,255,0.75);
+      --border: rgba(15, 35, 25, 0.12);
+      --text: rgba(10, 20, 15, 0.92);
+      --muted: rgba(10, 20, 15, 0.70);
+      --muted2: rgba(10, 20, 15, 0.55);
+      --shadow: 0 18px 45px rgba(0,0,0,0.10);
+      --radius: 16px;
+      --btn-bg: rgba(10,20,15,0.05);
+      --btn-border: rgba(10,20,15,0.14);
+      --btn-text: rgba(10,20,15,0.92);
+      --stage-shadow: 0 18px 50px rgba(0,0,0,0.18);
+    }
+
+    body.dark{
+      --brand: #43b178;
+      --brand-dark: #2f8d5d;
+      --bg1: #07110c;
+      --bg2: #0b1410;
+      --card: rgba(255,255,255,0.06);
+      --card2: rgba(255,255,255,0.08);
+      --border: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.70);
+      --muted2: rgba(255,255,255,0.55);
+      --shadow: 0 18px 50px rgba(0,0,0,0.45);
+      --btn-bg: rgba(0,0,0,0.18);
+      --btn-border: rgba(255,255,255,0.14);
+      --btn-text: rgba(255,255,255,0.92);
+      --stage-shadow: 0 18px 50px rgba(0,0,0,0.55);
+    }
+
+    * { box-sizing: border-box; }
+
+    input, button, select, textarea { font-family: inherit; }
+
+    body{
+      margin: 0;
+      padding: 14px;
+      font-family: MerriweatherSans, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 15% 0%, rgba(67,177,120,0.18), transparent 60%),
+        radial-gradient(700px 450px at 100% 20%, rgba(67,177,120,0.12), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      min-height: 100vh;
+    }
+
+    .page{ max-width: 1100px; margin: 0 auto; display: grid; gap: 12px; }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:12px;
+      padding:14px 14px 0;
+    }
+
+    .brandBlock h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.2px;
+      font-weight:800;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .brandDot{
+      width:10px; height:10px;
+      border-radius:999px;
+      background:var(--brand);
+      box-shadow:0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent);
+    }
+
+    .brandBlock p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+
+    .rightTools{
+      display:flex;
+      flex-direction:row;
+      align-items:center;
+      gap:10px;
+    }
+
+    .badge{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid color-mix(in srgb, var(--brand) 40%, transparent);
+      background: color-mix(in srgb, var(--brand) 14%, transparent);
+      color:var(--text);
+      font-size:12px; font-weight:700; white-space:nowrap;
+    }
+
+    .themeToggle{
+      display:inline-flex; align-items:center; gap:8px;
+      border-radius:999px;
+      padding:7px 10px;
+      border:1px solid var(--btn-border);
+      background:var(--btn-bg);
+      color:var(--btn-text);
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      user-select:none;
+      transition:filter .12s ease, transform .06s ease, border-color .12s ease;
+      white-space:nowrap;
+    }
+    .themeToggle:hover{
+      filter:brightness(1.03);
+      border-color: color-mix(in srgb, var(--brand) 45%, var(--btn-border));
+    }
+    .themeToggle:active{ transform: translateY(1px); }
+
+    .shell{
+      display:grid;
+      grid-template-columns:1fr 360px;
+      gap:12px;
+      align-items: stretch;
+    }
+
+    @media (max-width:980px){
+      .shell{ grid-template-columns:1fr; }
+      .topbar{ flex-direction:column; align-items:flex-start; }
+      .rightTools{ width:100%; justify-content:space-between; flex-wrap:wrap; }
+      .badge{ white-space:normal; }
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .cardHead{
+      padding:12px 14px;
+      border-bottom:1px solid color-mix(in srgb, var(--border) 65%, transparent);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex: 0 0 auto;
+    }
+
+    .cardHead .title{
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.2px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .cardHead .sub{
+      font-size:12px;
+      color:var(--muted2);
+    }
+
+    .frameNav{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .frameBtn{
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      cursor:pointer;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:0.2px;
+      user-select:none;
+      transition:filter .12s ease, transform .06s ease, border-color .12s ease;
+      white-space:nowrap;
+    }
+    .frameBtn:hover{
+      filter:brightness(1.05);
+      border-color: color-mix(in srgb, var(--brand) 45%, var(--btn-border));
+    }
+    .frameBtn:active{ transform: translateY(1px); }
+    .frameBtn:disabled{ opacity:.45; cursor:not-allowed; filter:saturate(.4); }
+
+    .frameLabel{
+      font-size:12px;
+      font-weight:800;
+      color: color-mix(in srgb, var(--text) 88%, transparent);
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
+      background: color-mix(in srgb, var(--btn-bg) 60%, transparent);
+      white-space:nowrap;
+    }
+
+    .stage-wrap{
+      flex: 1 1 auto;
+      min-height: 0;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:14px;
+    }
+
+    .stage{
+      border-radius:18px;
+      overflow:hidden;
+      background:#fff;
+      box-shadow: 0 0 0 1px color-mix(in srgb, var(--border) 65%, transparent), var(--stage-shadow);
+      position:relative;
+      touch-action:none;
+    }
+
+    .stage::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 55%, transparent);
+      border-radius:18px;
+    }
+
+    #c{ display:block; }
+
+    .stageLoading{
+      position:absolute;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background: color-mix(in srgb, var(--bg2) 65%, transparent);
+      backdrop-filter: blur(6px);
+      z-index: 5;
+      pointer-events:none;
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: .2px;
+      color: var(--text);
+    }
+
+    .stageLoading.on{ display:flex; }
+
+    .stageLoading .pill{
+      border:1px solid color-mix(in srgb, var(--border) 70%, transparent);
+      background: color-mix(in srgb, var(--card) 70%, transparent);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+    }
+
+    .controls{ padding:14px; display:grid; gap:10px; }
+
+    .panel{
+      background:var(--card2);
+      border:1px solid color-mix(in srgb, var(--border) 85%, transparent);
+      border-radius:14px;
+      padding:12px;
+      display:grid;
+      gap:10px;
+    }
+
+    .label{
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:.2px;
+      color: color-mix(in srgb, var(--text) 86%, transparent);
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+
+    input[type="file"]{
+      width:100%;
+      padding:10px;
+      background: color-mix(in srgb, var(--btn-bg) 70%, transparent);
+      border: 1px dashed color-mix(in srgb, var(--border) 90%, transparent);
+      border-radius:12px;
+      color:var(--text);
+    }
+
+    input[type="text"]{
+      width:100%;
+      padding:12px 12px;
+      border-radius:12px;
+      border:1px solid var(--btn-border);
+      background: color-mix(in srgb, var(--btn-bg) 80%, transparent);
+      color:var(--text);
+      outline:none;
+    }
+
+    .rangeWrap{ padding:0 14px; }
+    input[type="range"]{ width:100%; accent-color: var(--brand); }
+
+    .pill{
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--btn-border);
+      background: color-mix(in srgb, var(--btn-bg) 85%, transparent);
+      color: color-mix(in srgb, var(--text) 88%, transparent);
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+
+    .btn{
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid var(--btn-border);
+      background: var(--btn-bg);
+      color: var(--btn-text);
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:.2px;
+      transition: transform .06s ease, filter .12s ease, border-color .12s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ filter:brightness(1.05); border-color: color-mix(in srgb, var(--brand) 45%, var(--btn-border)); }
+    .btn:active{ transform: translateY(1px); }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .btnPrimary{
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--brand) 92%, #fff 0%),
+        color-mix(in srgb, var(--brand-dark) 92%, #fff 0%)
+      );
+      border: 1px solid color-mix(in srgb, var(--brand) 55%, transparent);
+      color: color-mix(in srgb, var(--bg2) 90%, #000 0%);
+    }
+
+    .btnHint{
+      border:none;
+      background:transparent;
+      padding:0;
+      color: var(--muted2);
+      font-size:12px;
+      font-weight:700;
+      letter-spacing:0.2px;
+      user-select:none;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+
+    .help{
+      color:var(--muted2);
+      font-size:12px;
+      line-height:1.35;
+      text-align:center;
+    }
+
+    .statusMsg{
+      display:none;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      font-weight:800;
+      color:var(--muted);
+      background:transparent;
+      border:none;
+      padding:0;
+      white-space:nowrap;
+    }
+    .statusMsg::before{
+      content:"";
+      width:12px; height:12px;
+      border-radius:999px;
+      border:2px solid color-mix(in srgb, var(--brand) 25%, transparent);
+      border-top-color: color-mix(in srgb, var(--brand) 95%, transparent);
+      animation:spin .8s linear infinite;
+    }
+    .statusMsg.error{ color: rgba(210,55,55,0.92); }
+    .statusMsg.error::before{ display:none; }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    .inlineNote{
+      font-size:12px;
+      color:var(--muted2);
+      margin-top:-4px;
+      min-height:16px;
+    }
+    .inlineNote.error{ color: rgba(210,55,55,0.92); }
+    .inlineNote.ok{ color: color-mix(in srgb, var(--brand) 75%, var(--text)); }
+
+    @media (max-width:420px){
+      body{ padding:10px; }
+      .topbar{ padding:10px 10px 0; }
+      .controls{ padding:12px; }
+      .stage-wrap{ padding:12px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <div class="topbar">
+      <div class="brandBlock">
+        <h1><span class="brandDot"></span> NMMS Frame Designer</h1>
+        <p>Nepali Mela 4 • Nepali Mela & Multicultural Showcasing Event (NMMS)</p>
+      </div>
+
+      <div class="rightTools">
+        <div class="badge">Nepali Mela 4 | July 18, 2026 | Prairie Winds Park</div>
+        <button id="themeToggle" class="themeToggle" type="button">🌙 Dark mode</button>
+      </div>
+    </div>
+
+    <div class="shell">
+      <div class="card">
+        <div class="cardHead">
+          <div class="title">
+            Preview
+            <span class="frameNav">
+              <button id="prevFrame" class="frameBtn" type="button">← Previous frame</button>
+              <span id="frameLabel" class="frameLabel">Frame 1</span>
+              <button id="nextFrame" class="frameBtn" type="button">Next frame →</button>
+            </span>
+          </div>
+          <div class="sub">Drag to move • Corners to resize/rotate</div>
+        </div>
+
+        <div class="stage-wrap">
+          <div id="stage" class="stage">
+            <div id="frameLoading" class="stageLoading">
+              <span class="pill">Loading frame…</span>
+            </div>
+            <canvas id="c" width="1024" height="1024"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHead">
+          <div class="title">Edit</div>
+          <div class="sub">Add photo & name</div>
+        </div>
+
+        <div class="controls">
+          <div class="panel">
+            <div class="label">Upload photo</div>
+            <input id="file" type="file" accept="image/*" />
+
+            <div class="row">
+              <button id="removeBg" class="btn" disabled type="button">Remove background</button>
+              <span id="bgStatus" class="statusMsg">Removing background...</span>
+            </div>
+
+            <div class="row">
+              <button id="remove" class="btn" disabled type="button">Remove selected</button>
+              <button id="download" class="btn btnPrimary" type="button">Download</button>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="label">Scale selected</div>
+            <div class="rangeWrap">
+              <input id="scaleSlider" type="range" min="0.05" max="3" step="0.01" value="1" disabled />
+            </div>
+            <div class="row">
+              <span id="scaleValue" class="pill">1.00×</span>
+              <span class="btnHint">Select an item first</span>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="label">Your name</div>
+            <input id="nameInput" type="text" placeholder="Type your name…" />
+            <div id="nameStatus" class="inlineNote"></div>
+            <div class="row">
+              <button id="addName" class="btn" type="button" onclick="addNameToCanvas()">Add name</button>
+            </div>
+            <div class="help">
+              Tip: After adding, you can <b>drag</b> the name and <b>resize</b> it.
+            </div>
+          </div>
+
+          <div class="help">Made for NMMS / Nepali Mela 4</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { pipeline } from "https://esm.sh/@huggingface/transformers@3.8.1";
+
+    const pipelineCache = new Map();
+
+    function pickDevice() {
+      return (typeof navigator !== "undefined" && "gpu" in navigator) ? "webgpu" : undefined;
+    }
+
+    async function getSegmenter(modelId) {
+      if (pipelineCache.has(modelId)) return pipelineCache.get(modelId);
+
+      const opts = { dtype: "fp32" };
+      const dev = pickDevice();
+      if (dev) opts.device = dev;
+
+      const p = pipeline("background-removal", modelId, opts);
+      pipelineCache.set(modelId, p);
+      return p;
+    }
+
+    window.__nmms_remove_bg__ = async (imageBlob, modelId) => {
+      const segmenter = await getSegmenter(modelId);
+      const url = URL.createObjectURL(imageBlob);
+      try {
+        const output = await segmenter(url);
+        const outBlob = await output[0].toBlob();
+        return outBlob;
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    };
+  </script>
+
+  <script>
+    const themeToggleBtn = document.getElementById("themeToggle");
+    function applyTheme(isDark) {
+      document.body.classList.toggle("dark", !!isDark);
+      themeToggleBtn.textContent = isDark ? "☀️ Light mode" : "🌙 Dark mode";
+    }
+    const savedTheme = localStorage.getItem("nmms_theme");
+    applyTheme(savedTheme === "dark");
+    themeToggleBtn.addEventListener("click", () => {
+      const willBeDark = !document.body.classList.contains("dark");
+      applyTheme(willBeDark);
+      localStorage.setItem("nmms_theme", willBeDark ? "dark" : "light");
+    });
+
+    const EXPORT_W = 1024;
+    const EXPORT_H = 1024;
+
+    const BACKGROUND_PREFIX = "background";
+    const BACKGROUND_EXT = ".png";
+
+    const REQUEST_TIMEOUT_MS = 2500;
+
+    const DISPLAY_MAX = 720;
+    const DISPLAY_MIN = 300;
+
+    const stageEl = document.getElementById("stage");
+    const stageWrapEl = document.querySelector(".stage-wrap");
+    const nameStatusEl = document.getElementById("nameStatus");
+
+    const prevFrameBtn = document.getElementById("prevFrame");
+    const nextFrameBtn = document.getElementById("nextFrame");
+    const frameLabelEl = document.getElementById("frameLabel");
+
+    function setNameStatus(msg, kind) {
+      nameStatusEl.textContent = msg || "";
+      nameStatusEl.classList.remove("error","ok");
+      if (kind) nameStatusEl.classList.add(kind);
+    }
+
+    const canvas = new fabric.Canvas("c", {
+      preserveObjectStacking: true,
+      selection: true
+    });
+
+    const removeBtn = document.getElementById("remove");
+    const removeBgBtn = document.getElementById("removeBg");
+    const bgStatusEl = document.getElementById("bgStatus");
+    const scaleSlider = document.getElementById("scaleSlider");
+    const scaleValue = document.getElementById("scaleValue");
+
+    function showBgStatus(text, isError = false) {
+      bgStatusEl.textContent = text;
+      bgStatusEl.classList.toggle("error", !!isError);
+      bgStatusEl.style.display = "inline-flex";
+    }
+    function hideBgStatus() {
+      bgStatusEl.style.display = "none";
+      bgStatusEl.classList.remove("error");
+    }
+
+    function computeDisplaySize() {
+      const rect = stageWrapEl.getBoundingClientRect();
+      const pad = 14 * 2;
+      const availableW = rect.width - pad;
+      const availableH = rect.height - pad;
+      const fit = Math.min(availableW, availableH);
+      const clamped = Math.max(DISPLAY_MIN, Math.min(DISPLAY_MAX, fit));
+      return Math.floor(clamped);
+    }
+
+    function applyResponsiveSizing() {
+      const displaySize = computeDisplaySize();
+      stageEl.style.width = displaySize + "px";
+      stageEl.style.height = displaySize + "px";
+      const zoom = displaySize / EXPORT_W;
+      canvas.setZoom(zoom);
+      canvas.calcOffset();
+      canvas.requestRenderAll();
+    }
+
+    window.addEventListener("resize", applyResponsiveSizing);
+    window.addEventListener("load", () => setTimeout(applyResponsiveSizing, 0));
+
+    function isPhotoObject(obj) { return !!obj && obj.type === "image"; }
+    function setRemoveEnabled() { removeBtn.disabled = !canvas.getActiveObject(); }
+    function setRemoveBgEnabled() { removeBgBtn.disabled = !isPhotoObject(canvas.getActiveObject()); }
+    function setScaleControlsEnabled(enabled) { scaleSlider.disabled = !enabled; }
+
+    function getUniformScale(obj) {
+      if (!obj) return 1;
+      const sx = typeof obj.scaleX === "number" ? obj.scaleX : 1;
+      const sy = typeof obj.scaleY === "number" ? obj.scaleY : 1;
+      return (sx + sy) / 2;
+    }
+
+    function syncSliderToSelection() {
+      const obj = canvas.getActiveObject();
+      const has = !!obj;
+
+      setRemoveEnabled();
+      setRemoveBgEnabled();
+      setScaleControlsEnabled(has);
+
+      if (!has) {
+        scaleSlider.value = "1";
+        scaleValue.textContent = "1.00×";
+        return;
+      }
+
+      const s = getUniformScale(obj);
+      const clamped = Math.max(0.05, Math.min(3, s));
+      scaleSlider.value = String(clamped);
+      scaleValue.textContent = `${clamped.toFixed(2)}×`;
+    }
+
+    canvas.on("selection:created", syncSliderToSelection);
+    canvas.on("selection:updated", syncSliderToSelection);
+    canvas.on("selection:cleared", syncSliderToSelection);
+    canvas.on("object:modified", syncSliderToSelection);
+    canvas.on("object:scaled", syncSliderToSelection);
+
+    let frameIndex = 0;
+    const frameCache = new Map();
+    const frameExistsCache = new Map();
+
+    const loadingEl = document.getElementById("frameLoading");
+    function showFrameLoading(msg = "Loading frame…") {
+      if (!loadingEl) return;
+      const pill = loadingEl.querySelector(".pill");
+      if (pill) pill.textContent = msg;
+      loadingEl.classList.add("on");
+    }
+    function hideFrameLoading() {
+      if (!loadingEl) return;
+      loadingEl.classList.remove("on");
+    }
+
+    function framePathForIndex(idx) {
+      return idx === 0
+        ? `${BACKGROUND_PREFIX}${BACKGROUND_EXT}`
+        : `${BACKGROUND_PREFIX}${idx}${BACKGROUND_EXT}`;
+    }
+
+    async function fileExists(url) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
+
+      try {
+        let res = await fetch(url, { method: "HEAD", cache: "no-cache", signal: ctrl.signal });
+        if (res.ok) return true;
+        res = await fetch(url, { method: "GET", cache: "no-cache", signal: ctrl.signal });
+        return res.ok;
+      } catch (_) {
+        return false;
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
+    async function frameExists(idx) {
+      if (frameExistsCache.has(idx)) return frameExistsCache.get(idx);
+      const url = framePathForIndex(idx);
+      const ok = await fileExists(url);
+      frameExistsCache.set(idx, ok);
+      return ok;
+    }
+
+    function setFrameLabelSimple() {
+      frameLabelEl.textContent = `Frame ${frameIndex + 1}`;
+    }
+
+    async function setFrameButtonsLazy() {
+      prevFrameBtn.disabled = frameIndex <= 0;
+      const nextOk = await frameExists(frameIndex + 1);
+      nextFrameBtn.disabled = !nextOk;
+    }
+
+    async function loadBackgroundIndex(idx) {
+      if (idx !== 0) {
+        const ok = await frameExists(idx);
+        if (!ok) return false;
+      }
+
+      frameIndex = idx;
+      setFrameLabelSimple();
+      showFrameLoading(`Loading frame ${frameIndex + 1}…`);
+
+      if (frameCache.has(idx)) {
+        const img = frameCache.get(idx);
+        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+        canvas.requestRenderAll();
+        hideFrameLoading();
+        await setFrameButtonsLazy();
+        return true;
+      }
+
+      const url = framePathForIndex(idx);
+
+      return new Promise((resolve) => {
+        fabric.Image.fromURL(
+          url,
+          async (img) => {
+            if (!img) {
+              hideFrameLoading();
+              await setFrameButtonsLazy();
+              resolve(false);
+              return;
+            }
+
+            img.set({
+              selectable: false,
+              evented: false,
+              originX: "left",
+              originY: "top",
+              left: 0,
+              top: 0,
+              scaleX: 1,
+              scaleY: 1
+            });
+
+            frameCache.set(idx, img);
+
+            canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+            canvas.requestRenderAll();
+
+            hideFrameLoading();
+            await setFrameButtonsLazy();
+            resolve(true);
+          },
+          { crossOrigin: "anonymous" }
+        );
+      });
+    }
+
+    prevFrameBtn.addEventListener("click", async () => {
+      if (prevFrameBtn.disabled) return;
+      await loadBackgroundIndex(Math.max(0, frameIndex - 1));
+    });
+
+    nextFrameBtn.addEventListener("click", async () => {
+      if (nextFrameBtn.disabled) return;
+      await loadBackgroundIndex(frameIndex + 1);
+    });
+
+    document.getElementById("file").addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      const url = URL.createObjectURL(file);
+
+      fabric.Image.fromURL(url, (img) => {
+        img.set({
+          left: EXPORT_W / 2,
+          top: EXPORT_H / 2,
+          originX: "center",
+          originY: "center",
+          cornerStyle: "circle",
+          transparentCorners: false
+        });
+
+        img.__sourceUrl = url;
+
+        const maxW = EXPORT_W * 0.75;
+        const maxH = EXPORT_H * 0.75;
+        const scale = Math.min(maxW / img.width, maxH / img.height);
+        img.scale(scale);
+
+        canvas.add(img);
+        canvas.setActiveObject(img);
+        canvas.renderAll();
+        syncSliderToSelection();
+      });
+    });
+
+    removeBtn.addEventListener("click", () => {
+      const obj = canvas.getActiveObject();
+      if (!obj) return;
+      canvas.remove(obj);
+      canvas.discardActiveObject();
+      canvas.renderAll();
+      syncSliderToSelection();
+    });
+
+    scaleSlider.addEventListener("input", () => {
+      const obj = canvas.getActiveObject();
+      if (!obj) return;
+      const s = Number(scaleSlider.value);
+      obj.set({ scaleX: s, scaleY: s });
+      obj.setCoords();
+      scaleValue.textContent = `${s.toFixed(2)}×`;
+      canvas.requestRenderAll();
+    });
+
+    window.addNameToCanvas = async function addNameToCanvas() {
+      try {
+        setNameStatus("", null);
+
+        const input = document.getElementById("nameInput");
+        const text = (input.value || "").trim();
+        if (!text) {
+          setNameStatus("Type a name first.", "error");
+          return;
+        }
+
+        try {
+          if (document.fonts && document.fonts.load) {
+            await document.fonts.load('16px "MerriweatherSans"');
+          }
+        } catch (e) {}
+
+        const t = new fabric.Textbox(text, {
+          left: EXPORT_W / 2,
+          top: EXPORT_H * 0.82,
+          originX: "center",
+          originY: "center",
+          width: EXPORT_W * 0.85,
+          fontSize: 64,
+          fontWeight: "700",
+          fontFamily: "MerriweatherSans, system-ui, sans-serif",
+          fill: "#fe9213",
+          stroke: "#000000",
+          strokeWidth: 4,
+          paintFirst: "stroke",
+          textAlign: "center",
+          cornerStyle: "circle",
+          transparentCorners: false,
+          shadow: new fabric.Shadow({
+            color: "rgba(0,0,0,0.28)",
+            blur: 6,
+            offsetX: 0,
+            offsetY: 2
+          })
+        });
+
+        canvas.add(t);
+        canvas.setActiveObject(t);
+        t.bringToFront();
+        canvas.renderAll();
+        syncSliderToSelection();
+
+        setNameStatus("Name added.", "ok");
+      } catch (err) {
+        setNameStatus("Add name failed. Check Console.", "error");
+      }
+    };
+
+    removeBgBtn.addEventListener("click", async () => {
+      const obj = canvas.getActiveObject();
+      if (!obj || obj.type !== "image") return;
+
+      removeBgBtn.disabled = true;
+      showBgStatus("Removing background...");
+
+      try {
+        const modelId = "onnx-community/modnet-webnn"; // or "briaai/RMBG-1.4"
+
+        const src = obj.__sourceUrl || (typeof obj.getSrc === "function" ? obj.getSrc() : null);
+        if (!src) throw new Error("No image source found for selected object.");
+
+        const inputBlob = await fetch(src).then(r => r.blob());
+        const outBlob = await window.__nmms_remove_bg__(inputBlob, modelId);
+        const outUrl = URL.createObjectURL(outBlob);
+
+        const keep = {
+          left: obj.left, top: obj.top,
+          originX: obj.originX, originY: obj.originY,
+          angle: obj.angle,
+          scaleX: obj.scaleX, scaleY: obj.scaleY,
+          flipX: obj.flipX, flipY: obj.flipY,
+          skewX: obj.skewX, skewY: obj.skewY
+        };
+
+        fabric.Image.fromURL(outUrl, (newImg) => {
+          newImg.set({ ...keep, cornerStyle: "circle", transparentCorners: false });
+          newImg.__sourceUrl = outUrl;
+
+          canvas.remove(obj);
+          canvas.add(newImg);
+          canvas.setActiveObject(newImg);
+          newImg.bringToFront();
+          canvas.requestRenderAll();
+          syncSliderToSelection();
+
+          hideBgStatus();
+          removeBgBtn.disabled = false;
+        }, { crossOrigin: "anonymous" });
+
+      } catch (e) {
+        console.error(e);
+        showBgStatus("Removing background failed", true);
+        setTimeout(() => hideBgStatus(), 2000);
+        syncSliderToSelection();
+        removeBgBtn.disabled = !(canvas.getActiveObject() && canvas.getActiveObject().type === "image");
+      }
+    });
+
+    document.getElementById("download").addEventListener("click", () => {
+      const prevZoom = canvas.getZoom();
+      canvas.setZoom(1);
+      canvas.discardActiveObject();
+      canvas.renderAll();
+
+      const dataURL = canvas.toDataURL({ format: "png", multiplier: 1 });
+
+      canvas.setZoom(prevZoom);
+      canvas.requestRenderAll();
+
+      const a = document.createElement("a");
+      a.href = dataURL;
+      a.download = "nmms-nepali-mela-4.png";
+      a.click();
+    });
+
+    (async () => {
+      await loadBackgroundIndex(0);
+      setTimeout(applyResponsiveSizing, 0);
+      syncSliderToSelection();
+    })();
+  </script>
+</body>
+</html>
