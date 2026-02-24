@@ -612,7 +612,7 @@
       bgStatusEl.classList.remove("error");
     }
 
-    function computeDisplaySize() {
+    function computeDisplayMaxSide() {
       const rect = stageWrapEl.getBoundingClientRect();
       const pad = 14 * 2;
       const availableW = rect.width - pad;
@@ -623,14 +623,16 @@
     }
 
     function applyResponsiveSizing() {
-      const displaySize = computeDisplaySize();
-      stageEl.style.width = displaySize + "px";
-      stageEl.style.height = displaySize + "px";
+      const maxSide = computeDisplayMaxSide();
+      const scale = Math.min(maxSide / EXPORT_W, maxSide / EXPORT_H);
+      const cssW = Math.max(1, Math.floor(EXPORT_W * scale));
+      const cssH = Math.max(1, Math.floor(EXPORT_H * scale));
 
-      canvas.setDimensions({ width: displaySize, height: displaySize }, { cssOnly: true });
+      stageEl.style.width = cssW + "px";
+      stageEl.style.height = cssH + "px";
+      canvas.setDimensions({ width: cssW, height: cssH }, { cssOnly: true });
 
-      const zoom = displaySize / EXPORT_W;
-      canvas.setZoom(zoom);
+      canvas.setZoom(scale);
       canvas.calcOffset();
       canvas.requestRenderAll();
     }
@@ -638,10 +640,8 @@
     function setExportSize(w, h) {
       EXPORT_W = w;
       EXPORT_H = h;
-
       canvas.setWidth(w);
       canvas.setHeight(h);
-
       applyResponsiveSizing();
     }
 
@@ -692,26 +692,21 @@
 
     const loadingEl = document.getElementById("frameLoading");
     function showFrameLoading(msg = "Loading frame…") {
-      if (!loadingEl) return;
-      const pill = loadingEl.querySelector(".pill");
+      const pill = loadingEl && loadingEl.querySelector(".pill");
       if (pill) pill.textContent = msg;
-      loadingEl.classList.add("on");
+      if (loadingEl) loadingEl.classList.add("on");
     }
     function hideFrameLoading() {
-      if (!loadingEl) return;
-      loadingEl.classList.remove("on");
+      if (loadingEl) loadingEl.classList.remove("on");
     }
 
     function framePathForIndex(idx) {
-      return idx === 0
-        ? `${BACKGROUND_PREFIX}${BACKGROUND_EXT}`
-        : `${BACKGROUND_PREFIX}${idx}${BACKGROUND_EXT}`;
+      return idx === 0 ? `${BACKGROUND_PREFIX}${BACKGROUND_EXT}` : `${BACKGROUND_PREFIX}${idx}${BACKGROUND_EXT}`;
     }
 
     async function fileExists(url) {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), REQUEST_TIMEOUT_MS);
-
       try {
         let res = await fetch(url, { method: "HEAD", cache: "no-cache", signal: ctrl.signal });
         if (res.ok) return true;
@@ -726,8 +721,7 @@
 
     async function frameExists(idx) {
       if (frameExistsCache.has(idx)) return frameExistsCache.get(idx);
-      const url = framePathForIndex(idx);
-      const ok = await fileExists(url);
+      const ok = await fileExists(framePathForIndex(idx));
       frameExistsCache.set(idx, ok);
       return ok;
     }
@@ -738,8 +732,21 @@
 
     async function setFrameButtonsLazy() {
       prevFrameBtn.disabled = frameIndex <= 0;
-      const nextOk = await frameExists(frameIndex + 1);
-      nextFrameBtn.disabled = !nextOk;
+      nextFrameBtn.disabled = !(await frameExists(frameIndex + 1));
+    }
+
+    function relayoutObjects(oldW, oldH, newW, newH) {
+      const sx = newW / oldW;
+      const sy = newH / oldH;
+      const objs = canvas.getObjects();
+      for (const o of objs) {
+        if (!o || o === canvas.backgroundImage) continue;
+        o.left = (o.left || 0) * sx;
+        o.top = (o.top || 0) * sy;
+        o.scaleX = (o.scaleX || 1) * sx;
+        o.scaleY = (o.scaleY || 1) * sy;
+        o.setCoords();
+      }
     }
 
     async function loadBackgroundIndex(idx) {
@@ -755,19 +762,19 @@
       if (frameCache.has(idx)) {
         const img = frameCache.get(idx);
 
-        setExportSize(img.width, img.height);
+        const oldW = EXPORT_W;
+        const oldH = EXPORT_H;
+        const newW = img.width || oldW;
+        const newH = img.height || oldH;
 
-        img.set({
-          selectable: false,
-          evented: false,
-          originX: "left",
-          originY: "top",
-          left: 0,
-          top: 0,
-          scaleX: 1,
-          scaleY: 1
-        });
+        if (newW !== oldW || newH !== oldH) {
+          relayoutObjects(oldW, oldH, newW, newH);
+          setExportSize(newW, newH);
+        } else {
+          applyResponsiveSizing();
+        }
 
+        img.set({ selectable: false, evented: false, originX: "left", originY: "top", left: 0, top: 0, scaleX: 1, scaleY: 1 });
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
         canvas.requestRenderAll();
         hideFrameLoading();
@@ -788,19 +795,19 @@
               return;
             }
 
-            setExportSize(img.width, img.height);
+            const oldW = EXPORT_W;
+            const oldH = EXPORT_H;
+            const newW = img.width || oldW;
+            const newH = img.height || oldH;
 
-            img.set({
-              selectable: false,
-              evented: false,
-              originX: "left",
-              originY: "top",
-              left: 0,
-              top: 0,
-              scaleX: 1,
-              scaleY: 1
-            });
+            if (newW !== oldW || newH !== oldH) {
+              relayoutObjects(oldW, oldH, newW, newH);
+              setExportSize(newW, newH);
+            } else {
+              applyResponsiveSizing();
+            }
 
+            img.set({ selectable: false, evented: false, originX: "left", originY: "top", left: 0, top: 0, scaleX: 1, scaleY: 1 });
             frameCache.set(idx, img);
 
             canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
@@ -889,7 +896,7 @@
           if (document.fonts && document.fonts.load) {
             await document.fonts.load('16px "MerriweatherSans"');
           }
-        } catch (e) {}
+        } catch (_) {}
 
         const t = new fabric.Textbox(text, {
           left: EXPORT_W / 2,
@@ -897,7 +904,7 @@
           originX: "center",
           originY: "center",
           width: EXPORT_W * 0.85,
-          fontSize: 64,
+          fontSize: Math.max(24, Math.round(EXPORT_H * 0.06)),
           fontWeight: "700",
           fontFamily: "MerriweatherSans, system-ui, sans-serif",
           fill: "#fe9213",
@@ -907,12 +914,7 @@
           textAlign: "center",
           cornerStyle: "circle",
           transparentCorners: false,
-          shadow: new fabric.Shadow({
-            color: "rgba(0,0,0,0.28)",
-            blur: 6,
-            offsetX: 0,
-            offsetY: 2
-          })
+          shadow: new fabric.Shadow({ color: "rgba(0,0,0,0.28)", blur: 6, offsetX: 0, offsetY: 2 })
         });
 
         canvas.add(t);
@@ -920,7 +922,6 @@
         t.bringToFront();
         canvas.renderAll();
         syncSliderToSelection();
-
         setNameStatus("Name added.", "ok");
       } catch (err) {
         setNameStatus("Add name failed. Check Console.", "error");
@@ -935,8 +936,7 @@
       showBgStatus("Removing background...");
 
       try {
-        const modelId = "onnx-community/modnet-webnn"; // or "briaai/RMBG-1.4"
-
+        const modelId = "onnx-community/modnet-webnn";
         const src = obj.__sourceUrl || (typeof obj.getSrc === "function" ? obj.getSrc() : null);
         if (!src) throw new Error("No image source found for selected object.");
 
